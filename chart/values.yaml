@@ -19,23 +19,14 @@ gras:
     ssl: true
     sslissuer: letsencrypt-grapple-demo
     initContainers:
-    - name: init-db
-      spec:
-        name: init-db
-        image: mysql
-        command:
-        - bash
-        - -c
-        - sleep 5; while ! mysql -h $(host) -P $(port) -u $(username) -p$(password)
-          -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql
-          -h $(host) -P $(port) -u $(username) -p$(password) -e "SET @tablename
-          := (select table_name from information_schema.tables where table_type
-          = 'BASE TABLE' and table_schema = 'mbdpp' limit 1); set @qry1:=
-          concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1
-          ; execute stmt ;" 2>/dev/null; then echo "database already exists...";
-          else curl -o /tmp/mbdpp.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/mbd-cashback/mbdpp-backup-dev.sql;
-          mysql -h $(host) -P $(port) -u $(username) -p$(password) < /tmp/mbdpp.sql;
-          rm /tmp/mbdpp.sql; fi
+      - name: init-db
+        spec:
+          name: init-db
+          image: mysql
+          command:
+            - bash
+            - -c
+            - sleep 5; while ! mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = 'mbdpp' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;" 2>/dev/null; then echo "database already exists..."; else curl -o /tmp/mbdpp.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/mbd-cashback/mbdpp-backup-dev.sql; mysql -h $(host) -P $(port) -u $(username) -p$(password) < /tmp/mbdpp.sql; rm /tmp/mbdpp.sql; fi
     extraSecrets:
       - mbddb-conn-credential
     datasources:
