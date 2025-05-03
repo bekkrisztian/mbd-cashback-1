@@ -19,110 +19,85 @@ gras:
     ssl: true
     sslissuer: letsencrypt-grapple-demo
     initContainers:
-      - name: test
-        spec:
-          name: init-db
-          image: mysql
-          command:
-            - bash
-            - -c
-            - sleep 5; while ! mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "USE classicmodelsid; SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;" ; then echo "database already exists..."; else curl -o /tmp/classicmodelsid.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql; mysql -h $(host) -P $(port) -u $(username) -p$(password) < /tmp/classicmodelsid.sql; fi
+    - name: init-db
+      spec:
+        name: init-db
+        image: mysql
+        command:
+        - bash
+        - -c
+        - sleep 5; while ! mysql -h $(host) -P $(port) -u $(username) -p$(password)
+          -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql
+          -h $(host) -P $(port) -u $(username) -p$(password) -e "SET @tablename
+          := (select table_name from information_schema.tables where table_type
+          = 'BASE TABLE' and table_schema = 'mbdpp' limit 1); set @qry1:=
+          concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1
+          ; execute stmt ;" 2>/dev/null; then echo "database already exists...";
+          else curl -o /tmp/mbdpp.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/mbd-cashback/mbdpp-backup-dev.sql;
+          mysql -h $(host) -P $(port) -u $(username) -p$(password) < /tmp/mbdpp.sql;
+          rm /tmp/mbdpp.sql; fi
     extraSecrets:
-      - grpl-test-cm-conn-credential
-    # volumes:
-    #   - name: data
-    #     emptyDir: {}
-    #     # persistentVolumeClaim: 
-    #     #   claimName: grapi-dbfile
-    # volumeMounts:
-    #   - name: data
-    #     mountPath: /data
-    # datasources:
-    #   - name: "db"
-    #     spec:
-    #       memory:
-    #         connector: "memory"
-    #         name: "db"
-    #         file: "/data/db.json"
-    #         localStorage: "db"
+      - mbddb-conn-credential
     datasources:
-      - name: classicmodelsid
+      - name: mbdpp
         spec:
           mysql:
-            database: classicmodelsid
+            database: mbdpp
             host: $(host)
-            name: classicmodelsid
+            name: mbdpp
             password: $(password)
             port: $(port)
             url: ""
             user: $(username)
     discoveries:
-      - name: classicmodelsid
+      - name: mbdpp
         spec:
           all: true
-          dataSource: classicmodelsid
+          dataSource: mbdpp
           disableCamelCase: false
-          schema: classicmodelsid
-    # models:
-    #   - name: "clients"
-    #     spec:
-    #       name: clients
-    #       base: Entity
-    #       properties:
-    #         id:
-    #           type: number
-    #           id: true
-    #           required: true
-    #           generated: true
-    #         customerName:
-    #           type: string
-    #         customerLastname:
-    #           type: string
-    #         contactFirstName:
-    #           type: string
-    #         phone:
-    #           type: string
-    #         addressLine1:
-    #           type: string
-    #         addressLine2:
-    #           type: string
-    #         city:
-    #           type: string
-    #         state:
-    #           type: string
-    #         postalCode:
-    #           type: string
-    #         country:
-    #           type: string
-    #         creditLimit:
-    #           type: number
+          schema: mbdpp
     repositories:
       - name: classicmodelsid
         spec:
           datasource: classicmodelsid
           model: clients
-    # relations:
-    #   - name: "employees"
-    #     spec:
-    #       relationName: "employees"
-    #       sourceModel: "Customers"
-    #       destinationModel: "Employees"
-    #       foreignKeyName: "employeesId"
-    #       relationType: "belongsTo"
-    #       registerInclusionResolver: true
     relations:
+      - name: personalinformation
+        spec:
+          relationName: personalinformation
+          sourceModel: Purchasepaybacks
+          destinationModel: Personalinformation
+          foreignKeyName: personalinformationId
+          relationType: belongsTo
+          registerInclusionResolver: true
+      - name: purchasereceipts
+        spec:
+          relationName: purchasereceipts
+          sourceModel: Purchasepaybacks
+          destinationModel: Purchasereceipts
+          foreignKeyName: purchasereceiptsId
+          relationType: belongsTo
+          registerInclusionResolver: true
+      - name: dealerships
+        spec:
+          relationName: dealerships
+          sourceModel: Purchasereceipts
+          destinationModel: Dealerships
+          foreignKeyName: dealershipsId
+          relationType: belongsTo
+          registerInclusionResolver: true
       - name: employees
         spec:
+          relationName: employees
+          sourceModel: Customers
           destinationModel: Employees
           foreignKeyName: employeesId
-          registerInclusionResolver: true
-          relationName: employees
           relationType: belongsTo
-          sourceModel: Customers
+          registerInclusionResolver: true
     restcruds:
-      - name: "classicmodelsid"
+      - name: "mbdpp"
         spec:
-          datasource: "classicmodelsid"
+          datasource: "mbdpp"
     controllers: []
     postpatches: []
     injections: []
@@ -133,8 +108,8 @@ gras:
     uiimagetag: 0.2.9
     ssl: true
     sslissuer: letsencrypt-grapple-demo
-    style: '{"colors":{"primary":{"DEFAULT":"#34344A","fg":"#fff"},"accent":{"DEFAULT":"#CC5A71","fg":"#fff"}}}'
-    config: ""
+    style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+    config: '{"global":{"list-size":10,"field-properties":{"id":{"readonly":true}}},"schema":{"Purchasepaybacks":{"field-order":["id","date","completed","status","rejectionReason","cashbackType","personalinformation","personalinformationId","purchasereceipts","purchasereceiptsId","questions","personalinformationIdIdentified","personalinformationOverride","paidDate","paidByMbdDate"],"field-properties":{"hidden-fields":["salesRepEmployeeNumber","state"],"readonly-fields":["id"]},"validations":{"id":{"nullable":false,"validation":"/[0-9]/"},"email":{"email":true}}},"Personalinformation":{"field-order":["id","name","email","address","addressVerified","phone","phoneVerified","iban","ibanVerified","addressGeolocation"],"field-properties":{"hidden-fields":["salesRepEmployeeNumber","state"],"boolean-fields":["addressVerified","phoneVerified","ibanVerified"],"readonly-fields":["id"],"json-fields":[{"field":"address","template":"${street},${zip}${city}"}]}},"Purchasereceipts":{"field-order":["id","dealershipsId","purchaseDate","partsId","partsCount","vehicleVersion","vehicleVIN","storage","switch","dealershipIdentified","dealerOverride","datesIdentified","purchaseDateOverride","partsIdentified","partsOverrride","storageIdentified","storageOverride","switchIdentified","switchOverride","rekognitionResponse","raw"],"field-properties":{"hidden-fields":["raw"],"boolean-fields":["dealerOverride","purchaseDateOverride","partsOverrride","storageOverride","switchOverride"],"readonly-fields":["id"]}},"Dealerships":{"field-order":["id","vfnr","name","plz","ort","strasse","vfnrhb","betriebsart"],"field-properties":{"hidden-fields":["none"]}}}}'
     additionalpackages: ""
     custommodules: []
 replicaCount: 1
@@ -144,7 +119,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "0.1.45.pr-33"
 imagetest:
-  repository: apptest
+  repository: app
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -180,11 +155,11 @@ ingress:
   annotations: {}
   # kubernetes.io/ingress.class: nginx
   # kubernetes.io/tls-acme: "true"
-  # hosts:
-  #   - host: chart-example.local
-  #     paths:
-  #       - path: /
-  #         pathType: ImplementationSpecific
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
