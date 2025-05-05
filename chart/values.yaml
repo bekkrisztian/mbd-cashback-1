@@ -93,6 +93,7 @@ gras:
     postpatches: []
     injections: []
     prerelationpatches: []
+    prepatches: []
   gruim:
     # uiimagetag: "0.1.38"
     uiimage: grpl/gruim
