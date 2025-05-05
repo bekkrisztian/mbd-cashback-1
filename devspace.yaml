@@ -86,6 +86,26 @@ dev:
     env:
       - name: DEV
         value: "true"
+      - name: NODE_ENV
+        value: "development"
+      ## this value is automatically calculated if not actively provided
+      # - name: SVELTE_APP_REMOTE_URL
+      #   value: "http://localhost:8080"
+      ## this value is automatically calculated if not actively provided
+      # - name: CONTAINER_NAME
+      #   value: "grplmbdappgruim"
+      - name: SVELTE_APP_APP_START_DATE
+        value: "2024-01-01"
+      - name: SVELTE_APP_APP_END_DATE
+        value: "2024-12-31"
+      - name: SVELTE_APP_USERNAME
+        value: "patrick"
+      - name: SVELTE_APP_PASSWORD
+        value: "12345"
+      - name: SVELTE_APP_SKIP_PURCHASE_INFO
+        value: "true"
+      - name: SVELTE_APP_SKIP_DOCUMENT_PROCESSING
+        value: "false"
     sync:
       - path: ./
         excludePaths:
@@ -115,6 +135,7 @@ dev:
     # Open the following URLs once they return an HTTP status code other than 502 or 503
     open:
       - url: http://localhost:4000
+      - url: http://localhost:4000/admin
   gruim:
     # Search for the container that runs this image
     labelSelector:
@@ -189,12 +210,24 @@ commands:
 # localRegistry:
 #   localbuild: truede
 profiles:
-  - name: bitbucket
-    activation:
-      - vars:
-          CI: true
+  - name: dev
     patches:
-      - op: remove
-        path: images.jcs.buildKit
-      - op: remove
-        path: images.data.buildKit
+      - op: replace
+        path: deployments.mbd-cb.helm.valuesFiles[1]
+        value: ./chart/values-dev.yaml
+  - name: nop
+    patches:
+      - op: replace
+        path: deployments.mbd-cb.helm.valuesFiles[1]
+        value: ./chart/values-nop.yaml
+  - name: uat
+    patches:
+      - op: replace
+        path: deployments.mbd-cb.helm.valuesFiles[1]
+        value: ./chart/values-uat.yaml
+  - name: prod
+    patches:
+      - op: replace
+        path: deployments.mbd-cb.helm.valuesFiles[1]
+        value: ./chart/values-production.yaml
+
