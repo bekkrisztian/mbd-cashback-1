@@ -188,8 +188,10 @@ export class SensibleController {
           .upload({
             Bucket: process.env.AWS_S3_BUCKET_NAME ?? "mbd-staging",
             Key: `${receiptId}/merged.pdf`,
+            // @ts-ignore
             Body: imgToPDF(
               files.map((file) => file.buffer),
+              // @ts-ignore
               imgToPDF.sizes.A4
             ),
             ContentType: "application/pdf",
